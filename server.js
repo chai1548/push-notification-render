@@ -22,6 +22,9 @@ app.get('/', (req, res) => {
 });
 
 // Send notification route
+// ✅ Admin broadcast (topic) နဲ့ like/comment (per-device token) နှစ်မျိုးစလုံး ကိုင်တွယ်
+// - token ပါလာရင် → အဲ့ device တစ်ခုတည်းကို ပို့မယ်
+// - token မပါရင် (admin app ရဲ့ မူလ request အတိုင်း) → topic ကို ပို့မယ် (default: all_users)
 app.post('/send', async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
 
@@ -30,7 +33,9 @@ app.post('/send', async (req, res) => {
       title,
       message,
       imageUrl,
-      clickLink
+      clickLink,
+      token,
+      topic
     } = req.body;
 
     if (!title || !message) {
@@ -40,7 +45,6 @@ app.post('/send', async (req, res) => {
     }
 
     const payload = {
-      topic: 'all_users',
       data: {
         title: title,
         message: message,
@@ -51,6 +55,14 @@ app.post('/send', async (req, res) => {
         priority: 'high',
       },
     };
+
+    if (token) {
+      // ✅ Like/comment — post owner ရဲ့ device token တစ်ခုတည်းကို ပို့
+      payload.token = token;
+    } else {
+      // ✅ Admin broadcast — မူလအတိုင်း topic ကို ပို့ (backward compatible)
+      payload.topic = topic || 'all_users';
+    }
 
     const response = await admin.messaging().send(payload);
 

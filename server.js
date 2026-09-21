@@ -35,7 +35,9 @@ app.post('/send', async (req, res) => {
       imageUrl,
       clickLink,
       token,
-      topic
+      topic,
+      type,
+      extra
     } = req.body;
 
     if (!title || !message) {
@@ -50,14 +52,25 @@ app.post('/send', async (req, res) => {
         message: message,
         image: imageUrl || '',
         click_action: clickLink || 'https://google.com',
+        type: type || '',
       },
       android: {
         priority: 'high',
       },
     };
 
+    // ✅ Chat message / incoming call notification တွေအတွက် custom field တွေ (caller_uid, call_type, sinch_call_id, sender_uid, etc.)
+    // FCM data payload ထဲ value တိုင်း string ဖြစ်ရမှာမို့ String() နဲ့ convert လုပ်ပါတယ်
+    if (extra && typeof extra === 'object') {
+      for (const k in extra) {
+        if (Object.prototype.hasOwnProperty.call(extra, k)) {
+          payload.data[k] = String(extra[k]);
+        }
+      }
+    }
+
     if (token) {
-      // ✅ Like/comment — post owner ရဲ့ device token တစ်ခုတည်းကို ပို့
+      // ✅ Like/comment/chat/call — device တစ်ခုတည်းကို ပို့
       payload.token = token;
     } else {
       // ✅ Admin broadcast — မူလအတိုင်း topic ကို ပို့ (backward compatible)
